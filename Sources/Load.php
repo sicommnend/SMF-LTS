@@ -217,20 +217,21 @@ function reloadSettings()
 	);
 
 	$smcFunc += array(
-		'ufunc' => function ($func, $vars = null)
+		'ufunc' => function ($func, $vars = null, $array = false)
 		{
 			// Allow hooking into functions to rewrite vars or send the data to another function instead(aka function hijacking).
 			call_integration_hook('integrate_before_func_'.$func, array(&$func,&$vars));
 			if (!empty($func))
-				if (is_array($vars))
+				if (is_array($vars) && $array == true)
 					$return = call_user_func_array($func, $vars);
 				else
 					$return = call_user_func($func, $vars);
-			if ($return != null) {
+			if (!empty($return)) {
 				// allow modifications of return data.
 				call_integration_hook('integrate_after_func_'.$func, array(&$return));
 				return $return;
-			}
+			} else
+				return false;
 		},
 		'load' => function ($path, $file, $type = 'generic')
 		{

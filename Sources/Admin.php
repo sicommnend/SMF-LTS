@@ -30,8 +30,8 @@ function AdminMain()
 	// Load the language and templates....
 	$smcFunc['ufunc']('loadLanguage','Admin');
 	$smcFunc['ufunc']('loadTemplate','Admin');
-	$smcFunc['ufunc']('loadJavascriptFile',array('admin.js', array(), 'smf_admin'));
-	$smcFunc['ufunc']('loadCSSFile',array('admin.css', array(), 'smf_admin'));
+	$smcFunc['ufunc']('loadJavascriptFile',array('admin.js', array(), 'smf_admin'),true);
+	$smcFunc['ufunc']('loadCSSFile',array('admin.css', array(), 'smf_admin'),true);
 
 	// No indexing evil stuff.
 	$context['robot_no_index'] = true;
@@ -39,7 +39,7 @@ function AdminMain()
 	require_once($sourcedir . '/Subs-Menu.php');
 
 	// Some preferences.
-	$context['admin_preferences'] = !empty($options['admin_preferences']) ? $smcFunc['ufunc']('smf_json_decode',array($options['admin_preferences'], true)) : array();
+	$context['admin_preferences'] = !empty($options['admin_preferences']) ? $smcFunc['ufunc']('smf_json_decode',array($options['admin_preferences'], true),true) : array();
 
 	/** @var array $admin_areas Defines the menu structure for the admin center. See {@link Subs-Menu.php Subs-Menu.php} for details! */
 	$admin_areas = array(
@@ -453,12 +453,12 @@ function AdminMain()
 	$smcFunc['ufunc']('validateSession');
 
 	// Actually create the menu!
-	$admin_include_data = $smcFunc['ufunc']('createMenu',array($admin_areas, array('do_big_icons' => true)));
+	$admin_include_data = $smcFunc['ufunc']('createMenu',array($admin_areas, array('do_big_icons' => true)),true);
 	unset($admin_areas);
 
 	// Nothing valid?
 	if ($admin_include_data == false)
-		$smcFunc['ufunc']('fatal_lang_error',array('no_access', false));
+		$smcFunc['ufunc']('fatal_lang_error',array('no_access', false),true);
 
 	// Build the link tree.
 	$context['linktree'][] = array(
@@ -488,7 +488,7 @@ function AdminMain()
 		require_once($sourcedir . '/' . $admin_include_data['file']);
 
 	// Get the right callable.
-	$call = $smcFunc['ufunc']('call_helper',array($admin_include_data['function'], true));
+	$call = $smcFunc['ufunc']('call_helper',array($admin_include_data['function'], true),true);
 
 	// Is it valid?
 	if (!empty($call))
@@ -507,14 +507,14 @@ function AdminMain()
 */
 function AdminHome()
 {
-	global $sourcedir, $forum_version, $txt, $scripturl, $context, $user_info;
+	global $sourcedir, $forum_version, $txt, $scripturl, $context, $user_info, $smcFunc;
 
 	// You have to be able to do at least one of the below to see this page.
-	isAllowedTo(array('admin_forum', 'manage_permissions', 'moderate_forum', 'manage_membergroups', 'manage_bans', 'send_mail', 'edit_news', 'manage_boards', 'manage_smileys', 'manage_attachments'));
+	$smcFunc['ufunc']('isAllowedTo',array('admin_forum', 'manage_permissions', 'moderate_forum', 'manage_membergroups', 'manage_bans', 'send_mail', 'edit_news', 'manage_boards', 'manage_smileys', 'manage_attachments'));
 
 	// Find all of this forum's administrators...
 	require_once($sourcedir . '/Subs-Membergroups.php');
-	if (listMembergroupMembers_Href($context['administrators'], 1, 32) && allowedTo('manage_membergroups'))
+	if ($smcFunc['ufunc']('listMembergroupMembers_Href',array(&$context['administrators'], 1, 32),true) && $smcFunc['ufunc']('allowedTo','manage_membergroups'))
 	{
 		// Add a 'more'-link if there are more than 32.
 		$context['more_admins_link'] = '<a href="' . $scripturl . '?action=moderate;area=viewgroups;sa=members;group=1">' . $txt['more'] . '</a>';
@@ -522,7 +522,7 @@ function AdminHome()
 
 	// Load the credits stuff.
 	require_once($sourcedir . '/Who.php');
-	Credits(true);
+	$smcFunc['ufunc']('Credits',true);
 
 	// This makes it easier to get the latest news with your time format.
 	$context['time_format'] = urlencode($user_info['time_format']);
@@ -541,9 +541,9 @@ function AdminHome()
 		'php',
 		'server',
 	);
-	$context['current_versions'] = getServerVersions($checkFor);
+	$context['current_versions'] = $smcFunc['ufunc']('getServerVersions',$checkFor);
 
-	$context['can_admin'] = allowedTo('admin_forum');
+	$context['can_admin'] = $smcFunc['ufunc']('allowedTo','admin_forum');
 
 	$context['sub_template'] = $context['admin_area'] == 'credits' ? 'credits' : 'admin';
 	$context['page_title'] = $context['admin_area'] == 'credits' ? $txt['support_credits_title'] : $txt['admin_center'];
@@ -572,7 +572,7 @@ function AdminHome()
 	);
 
 	if ($context['admin_area'] == 'admin')
-		loadJavascriptFile('admin.js', array('defer' => false), 'smf_admin');
+		$smcFunc['ufunc']('loadJavascriptFile',array('admin.js', array('defer' => false), 'smf_admin'),true);
 }
 
 /**
@@ -585,7 +585,7 @@ function DisplayAdminFile()
 	setMemoryLimit('32M');
 
 	if (empty($_REQUEST['filename']) || !is_string($_REQUEST['filename']))
-		fatal_lang_error('no_access', false);
+		$smcFunc['ufunc']('fatal_lang_error',array('no_access', false),true);
 
 	// Strip off the forum cache part or we won't find it...
 	$_REQUEST['filename'] = str_replace($modSettings['browser_cache'], '', $_REQUEST['filename']);
@@ -601,7 +601,7 @@ function DisplayAdminFile()
 	);
 
 	if ($smcFunc['db_num_rows']($request) == 0)
-		fatal_lang_error('admin_file_not_found', true, array($_REQUEST['filename']), 404);
+		$smcFunc['ufunc']('fatal_lang_error',array('admin_file_not_found', true, array($_REQUEST['filename']), 404),true);
 
 	list ($file_data, $filetype) = $smcFunc['db_fetch_row']($request);
 	$smcFunc['db_free_result']($request);
@@ -635,7 +635,7 @@ function AdminSearch()
 {
 	global $txt, $context, $smcFunc, $sourcedir;
 
-	isAllowedTo('admin_forum');
+	$smcFunc['ufunc']('isAllowedTo','admin_forum');
 
 	// What can we search for?
 	$subActions = array(
@@ -657,13 +657,13 @@ function AdminSearch()
 
 		// Update the preferences.
 		require_once($sourcedir . '/Subs-Admin.php');
-		updateAdminPreferences();
+		$smcFunc['ufunc']('updateAdminPreferences');
 	}
 
 	if (trim($context['search_term']) == '')
 		$context['search_results'] = array();
 	else
-		call_helper($subActions[$context['search_type']]);
+		$smcFunc['ufunc']('call_helper',$subActions[$context['search_type']]);
 }
 
 /**
@@ -671,7 +671,7 @@ function AdminSearch()
  */
 function AdminSearchInternal()
 {
-	global $context, $txt, $helptxt, $scripturl, $sourcedir;
+	global $context, $txt, $helptxt, $scripturl, $sourcedir, $smcFunc;
 
 	// Try to get some more memory.
 	setMemoryLimit('128M');
@@ -726,7 +726,7 @@ function AdminSearchInternal()
 
 	call_integration_hook('integrate_admin_search', array(&$language_files, &$include_files, &$settings_search));
 
-	loadLanguage(implode('+', $language_files));
+	$smcFunc['ufunc']('loadLanguage',implode('+', $language_files));
 
 	foreach ($include_files as $file)
 		require_once($sourcedir . '/' . $file . '.php');
@@ -816,7 +816,7 @@ function AdminSearchInternal()
  */
 function AdminSearchMember()
 {
-	global $context, $sourcedir;
+	global $context, $sourcedir, $smcFunc;
 
 	require_once($sourcedir . '/ManageMembers.php');
 	$_REQUEST['sa'] = 'query';
@@ -824,7 +824,7 @@ function AdminSearchMember()
 	$_POST['membername'] = un_htmlspecialchars($context['search_term']);
 	$_POST['types'] = '';
 
-	ViewMembers();
+	$smcFunc['ufunc']('ViewMembers');
 }
 
 /**
@@ -832,7 +832,7 @@ function AdminSearchMember()
  */
 function AdminSearchOM()
 {
-	global $context, $sourcedir;
+	global $context, $sourcedir, $smcFunc;
 
 	$context['doc_apiurl'] = 'http://wiki.simplemachines.org/api.php';
 	$context['doc_scripturl'] = 'http://wiki.simplemachines.org/smf/';
@@ -855,7 +855,7 @@ function AdminSearchOM()
 
 	// If we didn't get any xml back we are in trouble - perhaps the doc site is overloaded?
 	if (!$search_results || preg_match('~<' . '\?xml\sversion="\d+\.\d+"\?' . '>\s*(<api>.+?</api>)~is', $search_results, $matches) != true)
-		fatal_lang_error('cannot_connect_doc_site');
+		$smcFunc['ufunc']('fatal_lang_error','cannot_connect_doc_site');
 
 	$search_results = $matches[1];
 
@@ -868,7 +868,7 @@ function AdminSearchOM()
 
 	// Move through the api layer.
 	if (!$results->exists('api'))
-		fatal_lang_error('cannot_connect_doc_site');
+		$smcFunc['ufunc']('fatal_lang_error','cannot_connect_doc_site');
 
 	// Are there actually some results?
 	if ($results->exists('api/query/search/p'))
@@ -890,7 +890,7 @@ function AdminSearchOM()
  */
 function AdminLogs()
 {
-	global $sourcedir, $context, $txt, $scripturl, $modSettings;
+	global $sourcedir, $context, $txt, $scripturl, $modSettings, $smcFunc;
 
 	// These are the logs they can load.
 	$log_functions = array(
@@ -943,7 +943,7 @@ function AdminLogs()
 	$subAction = isset($_REQUEST['sa']) && isset($log_functions[$_REQUEST['sa']]) && empty($log_functions[$_REQUEST['sa']]['disabled']) ? $_REQUEST['sa'] : 'errorlog';
 
 	require_once($sourcedir . '/' . $log_functions[$subAction][0]);
-	call_helper($log_functions[$subAction][1]);
+	$smcFunc['ufunc']('call_helper',$log_functions[$subAction][1]);
 }
 
 /**
