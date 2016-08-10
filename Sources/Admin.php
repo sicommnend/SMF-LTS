@@ -25,13 +25,13 @@ if (!defined('SMF'))
 function AdminMain()
 {
 	global $txt, $context, $scripturl, $modSettings, $settings;
-	global $sourcedir, $options, $boarddir;
+	global $sourcedir, $options, $boarddir, $smcFunc;
 
 	// Load the language and templates....
-	loadLanguage('Admin');
-	loadTemplate('Admin');
-	loadJavascriptFile('admin.js', array(), 'smf_admin');
-	loadCSSFile('admin.css', array(), 'smf_admin');
+	$smcFunc['ufunc']('loadLanguage','Admin');
+	$smcFunc['ufunc']('loadTemplate','Admin');
+	$smcFunc['ufunc']('loadJavascriptFile',array('admin.js', array(), 'smf_admin'));
+	$smcFunc['ufunc']('loadCSSFile',array('admin.css', array(), 'smf_admin'));
 
 	// No indexing evil stuff.
 	$context['robot_no_index'] = true;
@@ -39,7 +39,7 @@ function AdminMain()
 	require_once($sourcedir . '/Subs-Menu.php');
 
 	// Some preferences.
-	$context['admin_preferences'] = !empty($options['admin_preferences']) ? smf_json_decode($options['admin_preferences'], true) : array();
+	$context['admin_preferences'] = !empty($options['admin_preferences']) ? $smcFunc['ufunc']('smf_json_decode',array($options['admin_preferences'], true)) : array();
 
 	/** @var array $admin_areas Defines the menu structure for the admin center. See {@link Subs-Menu.php Subs-Menu.php} for details! */
 	$admin_areas = array(
@@ -450,15 +450,15 @@ function AdminMain()
 	}
 
 	// Make sure the administrator has a valid session...
-	validateSession();
+	$smcFunc['ufunc']('validateSession');
 
 	// Actually create the menu!
-	$admin_include_data = createMenu($admin_areas, array('do_big_icons' => true));
+	$admin_include_data = $smcFunc['ufunc']('createMenu',array($admin_areas, array('do_big_icons' => true)));
 	unset($admin_areas);
 
 	// Nothing valid?
 	if ($admin_include_data == false)
-		fatal_lang_error('no_access', false);
+		$smcFunc['ufunc']('fatal_lang_error',array('no_access', false));
 
 	// Build the link tree.
 	$context['linktree'][] = array(
@@ -488,11 +488,11 @@ function AdminMain()
 		require_once($sourcedir . '/' . $admin_include_data['file']);
 
 	// Get the right callable.
-	$call = call_helper($admin_include_data['function'], true);
+	$call = $smcFunc['ufunc']('call_helper',array($admin_include_data['function'], true));
 
 	// Is it valid?
 	if (!empty($call))
-		call_user_func($call);
+		$smcFunc['ufunc']($call);
 }
 
 /**

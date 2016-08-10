@@ -217,12 +217,15 @@ function reloadSettings()
 	);
 
 	$smcFunc += array(
-		'ufunc' => function ($func, $vars)
+		'ufunc' => function ($func, $vars = null)
 		{
 			// Allow hooking into functions to rewrite vars or send the data to another function instead(aka function hijacking).
 			call_integration_hook('integrate_before_func_'.$func, array(&$func,&$vars));
 			if (!empty($func))
-				$return = call_user_func($func, $vars);
+				if (is_array($vars))
+					$return = call_user_func_array($func, $vars);
+				else
+					$return = call_user_func($func, $vars);
 			if ($return != null) {
 				// allow modifications of return data.
 				call_integration_hook('integrate_after_func_'.$func, array(&$return));
