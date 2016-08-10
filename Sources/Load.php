@@ -216,6 +216,28 @@ function reloadSettings()
 		} : 'ucwords',
 	);
 
+	$smcFunc += array(
+		'ufunc' => function ($func, $vars)
+		{
+			// Allow hooking into functions to rewrite vars or send the data to another function instead(aka function hijacking).
+			call_integration_hook('integrate_before_func_'.$func, array(&$func,&$vars));
+			if (!empty($func))
+				$return = call_user_func($func, $vars);
+			if ($return != null) {
+				// allow modifications of return data.
+				call_integration_hook('integrate_after_func_'.$func, array(&$return));
+				return $return;
+			}
+		},
+		'load' => function ($path, $file, $type = 'generic')
+		{
+			// File hijacking, good for when you want to replace source files with others.
+			// Types source, theme, theme_lang
+			call_integration_hook('integrate_require_'.$type.'_'.$file, array(&$file));
+			require_once ($path.$file);
+		}
+	);
+
 	// Setting the timezone is a requirement for some functions.
 	if (isset($modSettings['default_timezone']))
 		date_default_timezone_set($modSettings['default_timezone']);
