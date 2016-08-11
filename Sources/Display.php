@@ -35,10 +35,10 @@ function Display()
 
 	// What are you gonna display if these are empty?!
 	if (empty($topic))
-		fatal_lang_error('no_board', false);
+		$smcFunc['ufunc']('fatal_lang_error',array('no_board', false),true);
 
 	// Load the proper template.
-	loadTemplate('Display');
+	$smcFunc['ufunc']('loadTemplate','Display');
 
 	// Not only does a prefetch make things slower for the server, but it makes it impossible to know if they read it.
 	if (isset($_SERVER['HTTP_X_MOZ']) && $_SERVER['HTTP_X_MOZ'] == 'prefetch')
@@ -173,7 +173,7 @@ function Display()
 	);
 
 	if ($smcFunc['db_num_rows']($request) == 0)
-		fatal_lang_error('not_a_topic', false, 404);
+		$smcFunc['ufunc']('fatal_lang_error',array('not_a_topic', false, 404),true);
 	$context['topicinfo'] = $smcFunc['db_fetch_assoc']($request);
 	$smcFunc['db_free_result']($request);
 
@@ -351,7 +351,7 @@ function Display()
 		$verificationOptions = array(
 			'id' => 'post',
 		);
-		$context['require_verification'] = create_control_verification($verificationOptions);
+		$context['require_verification'] = $smcFunc['ufunc']('create_control_verification',$verificationOptions);
 		$context['visual_verification_id'] = $verificationOptions['id'];
 	}
 
@@ -360,7 +360,7 @@ function Display()
 	$context['disabled_fields'] = isset($modSettings['disabled_profile_fields']) ? array_flip(explode(',', $modSettings['disabled_profile_fields'])) : array();
 
 	// Censor the title...
-	censorText($context['topicinfo']['subject']);
+	$smcFunc['ufunc']('censorText',$context['topicinfo']['subject']);
 	$context['page_title'] = $context['topicinfo']['subject'];
 
 	// Default this topic to not marked for notifications... of course...
@@ -535,15 +535,15 @@ function Display()
 			$context['response_prefix'] = $txt['response_prefix'];
 		else
 		{
-			loadLanguage('index', $language, false);
+			$smcFunc['ufunc']('loadLanguage',array('index', $language, false),true);
 			$context['response_prefix'] = $txt['response_prefix'];
-			loadLanguage('index');
+			$smcFunc['ufunc']('loadLanguage','index');
 		}
 		cache_put_data('response_prefix', $context['response_prefix'], 600);
 	}
 
 	// If we want to show event information in the topic, prepare the data.
-	if (allowedTo('calendar_view') && !empty($modSettings['cal_showInTopic']) && !empty($modSettings['cal_enabled']))
+	if ($smcFunc['ufunc']('allowedTo','calendar_view') && !empty($modSettings['cal_showInTopic']) && !empty($modSettings['cal_enabled']))
 	{
 		// First, try create a better time format, ignoring the "time" elements.
 		if (preg_match('~%[AaBbCcDdeGghjmuYy](?:[^%]*%[AaBbCcDdeGghjmuYy])*~', $user_info['time_format'], $matches) == 0 || empty($matches[0]))
@@ -643,7 +643,7 @@ function Display()
 		$pollinfo['has_voted'] = false;
 		while ($row = $smcFunc['db_fetch_assoc']($request))
 		{
-			censorText($row['label']);
+			$smcFunc['ufunc']('censorText',$row['label']);
 			$pollOptions[$row['id_choice']] = $row;
 			$realtotal += $row['votes'];
 			$pollinfo['has_voted'] |= $row['voted_this'] != -1;
@@ -693,13 +693,13 @@ function Display()
 		$context['poll'] = array(
 			'id' => $context['topicinfo']['id_poll'],
 			'image' => 'normal_' . (empty($pollinfo['voting_locked']) ? 'poll' : 'locked_poll'),
-			'question' => parse_bbc($pollinfo['question']),
+			'question' => $smcFunc['ufunc']('parse_bbc',$pollinfo['question']),
 			'total_votes' => $pollinfo['total'],
 			'change_vote' => !empty($pollinfo['change_vote']),
 			'is_locked' => !empty($pollinfo['voting_locked']),
 			'options' => array(),
-			'lock' => allowedTo('poll_lock_any') || ($context['user']['started'] && allowedTo('poll_lock_own')),
-			'edit' => allowedTo('poll_edit_any') || ($context['user']['started'] && allowedTo('poll_edit_own')),
+			'lock' => $smcFunc['ufunc']('allowedTo','poll_lock_any') || ($context['user']['started'] && $smcFunc['ufunc']('allowedTo','poll_lock_own')),
+			'edit' => $smcFunc['ufunc']('allowedTo','poll_edit_any') || ($context['user']['started'] && $smcFunc['ufunc']('allowedTo','poll_edit_own')),
 			'allowed_warning' => $pollinfo['max_votes'] > 1 ? sprintf($txt['poll_options6'], min(count($pollOptions), $pollinfo['max_votes'])) : '',
 			'is_expired' => !empty($pollinfo['expire_time']) && $pollinfo['expire_time'] < time(),
 			'expire_time' => !empty($pollinfo['expire_time']) ? timeformat($pollinfo['expire_time']) : 0,
@@ -723,14 +723,14 @@ function Display()
 		// 4. the poll is not locked, and
 		// 5. you have the proper permissions, and
 		// 6. you haven't already voted before.
-		$context['allow_vote'] = !$context['poll']['is_expired'] && (!$user_info['is_guest'] || ($pollinfo['guest_vote'] && allowedTo('poll_vote'))) && empty($pollinfo['voting_locked']) && allowedTo('poll_vote') && !$context['poll']['has_voted'];
+		$context['allow_vote'] = !$context['poll']['is_expired'] && (!$user_info['is_guest'] || ($pollinfo['guest_vote'] && $smcFunc['ufunc']('allowedTo','poll_vote'))) && empty($pollinfo['voting_locked']) && $smcFunc['ufunc']('allowedTo','poll_vote') && !$context['poll']['has_voted'];
 
 		// You're allowed to view the results if:
 		// 1. you're just a super-nice-guy, or
 		// 2. anyone can see them (hide_results == 0), or
 		// 3. you can see them after you voted (hide_results == 1), or
 		// 4. you've waited long enough for the poll to expire. (whether hide_results is 1 or 2.)
-		$context['allow_results_view'] = allowedTo('moderate_board') || $pollinfo['hide_results'] == 0 || ($pollinfo['hide_results'] == 1 && $context['poll']['has_voted']) || $context['poll']['is_expired'];
+		$context['allow_results_view'] = $smcFunc['ufunc']('allowedTo','moderate_board') || $pollinfo['hide_results'] == 0 || ($pollinfo['hide_results'] == 1 && $context['poll']['has_voted']) || $context['poll']['is_expired'];
 
 		// Show the results if:
 		// 1. You're allowed to see them (see above), and
@@ -750,7 +750,7 @@ function Display()
 		// 4. you have the proper permissions, and
 		// 5. you have already voted, and
 		// 6. the poll creator has said you can!
-		$context['allow_change_vote'] = !$context['poll']['is_expired'] && !$user_info['is_guest'] && empty($pollinfo['voting_locked']) && allowedTo('poll_vote') && $context['poll']['has_voted'] && $context['poll']['change_vote'];
+		$context['allow_change_vote'] = !$context['poll']['is_expired'] && !$user_info['is_guest'] && empty($pollinfo['voting_locked']) && $smcFunc['ufunc']('allowedTo','poll_vote') && $context['poll']['has_voted'] && $context['poll']['change_vote'];
 
 		// You're allowed to return to voting options if:
 		// 1. you are (still) allowed to vote.
@@ -952,7 +952,7 @@ function Display()
 	if (!empty($user_info['id']))
 	{
 		require_once($sourcedir . '/Subs-Notify.php');
-		$prefs = getNotifyPrefs($user_info['id'], array('topic_notify', 'topic_notify_' . $context['current_topic']), true);
+		$prefs = $smcFunc['ufunc']('getNotifyPrefs',array($user_info['id'], array('topic_notify', 'topic_notify_' . $context['current_topic']), true),true);
 		$pref = !empty($prefs[$user_info['id']]) && $context['is_marked_notify'] ? $prefs[$user_info['id']] : array();
 		$context['topicinfo']['notify_prefs'] = array(
 			'is_custom' => isset($pref['topic_notify_' . $topic]),
@@ -970,7 +970,7 @@ function Display()
 	if (!empty($messages))
 	{
 		// Fetch attachments.
-		if (!empty($modSettings['attachmentEnable']) && allowedTo('view_attachments'))
+		if (!empty($modSettings['attachmentEnable']) && $smcFunc['ufunc']('allowedTo','view_attachments'))
 		{
 			$request = $smcFunc['db_query']('', '
 				SELECT
@@ -990,7 +990,7 @@ function Display()
 			$temp = array();
 			while ($row = $smcFunc['db_fetch_assoc']($request))
 			{
-				if (!$row['approved'] && $modSettings['postmod_active'] && !allowedTo('approve_posts') && (!isset($all_posters[$row['id_msg']]) || $all_posters[$row['id_msg']] != $user_info['id']))
+				if (!$row['approved'] && $modSettings['postmod_active'] && !$smcFunc['ufunc']('allowedTo','approve_posts') && (!isset($all_posters[$row['id_msg']]) || $all_posters[$row['id_msg']] != $user_info['id']))
 					continue;
 
 				$temp[$row['id_attach']] = $row;
@@ -1018,7 +1018,7 @@ function Display()
 		call_integration_hook('integrate_query_message', array(&$msg_selects, &$msg_tables, &$msg_parameters));
 
 		// What?  It's not like it *couldn't* be only guests in this topic...
-		loadMemberData($posters);
+		$smcFunc['ufunc']('loadMemberData',$posters);
 		$messages_request = $smcFunc['db_query']('', '
 			SELECT
 				id_msg, icon, subject, poster_time, poster_ip, id_member, modified_time, modified_name, modified_reason, body,
@@ -1084,7 +1084,7 @@ function Display()
 		'can_like' => 'likes_like',
 	);
 	foreach ($common_permissions as $contextual => $perm)
-		$context[$contextual] = allowedTo($perm);
+		$context[$contextual] = $smcFunc['ufunc']('allowedTo',$perm);
 
 	// Permissions with _any/_own versions.  $context[YYY] => ZZZ_any/_own.
 	$anyown_permissions = array(
@@ -1103,7 +1103,7 @@ function Display()
 	if (!$user_info['is_admin'] && !$modSettings['topic_move_any'])
 	{
 		// We'll use this in a minute
-		$boards_allowed = array_diff(boardsAllowedTo('post_new'), array($board));
+		$boards_allowed = array_diff($smcFunc['ufunc']('boardsAllowedTo','post_new'), array($board));
 
 		/* You can't move this unless you have permission
 			to start new topics on at least one other board */
@@ -1135,14 +1135,14 @@ function Display()
 	$context['can_print'] = empty($modSettings['disable_print_topic']);
 
 	// Start this off for quick moderation - it will be or'd for each post.
-	$context['can_remove_post'] = allowedTo('delete_any') || (allowedTo('delete_replies') && $context['user']['started']);
+	$context['can_remove_post'] = $smcFunc['ufunc']('allowedTo','delete_any') || ($smcFunc['ufunc']('allowedTo','delete_replies') && $context['user']['started']);
 
 	// Can restore topic?  That's if the topic is in the recycle board and has a previous restore state.
 	$context['can_restore_topic'] &= !empty($board_info['recycle']) && !empty($context['topicinfo']['id_previous_board']);
 	$context['can_restore_msg'] &= !empty($board_info['recycle']) && !empty($context['topicinfo']['id_previous_topic']);
 
 	// Check if the draft functions are enabled and that they have permission to use them (for quick reply.)
-	$context['drafts_save'] = !empty($modSettings['drafts_post_enabled']) && allowedTo('post_draft') && $context['can_reply'];
+	$context['drafts_save'] = !empty($modSettings['drafts_post_enabled']) && $smcFunc['ufunc']('allowedTo','post_draft') && $context['can_reply'];
 	$context['drafts_autosave'] = !empty($context['drafts_save']) && !empty($modSettings['drafts_autosave_enabled']);
 	if (!empty($context['drafts_save']))
 		loadLanguage('Drafts');
@@ -1167,10 +1167,10 @@ function Display()
 	}
 
 	// You can't link an existing topic to the calendar unless you can modify the first post...
-	$context['calendar_post'] &= allowedTo('modify_any') || (allowedTo('modify_own') && $context['user']['started']);
+	$context['calendar_post'] &= $smcFunc['ufunc']('allowedTo','modify_any') || ($smcFunc['ufunc']('allowedTo','modify_own') && $context['user']['started']);
 
 	// Load up the "double post" sequencing magic.
-	checkSubmitOnce('register');
+	$smcFunc['ufunc']('checkSubmitOnce','register');
 	$context['name'] = isset($_SESSION['guest_name']) ? $_SESSION['guest_name'] : '';
 	$context['email'] = isset($_SESSION['guest_email']) ? $_SESSION['guest_email'] : '';
 	// Needed for the editor and message icons.
@@ -1192,7 +1192,7 @@ function Display()
 		// This is required
 		'required' => true,
 	);
-	create_control_richedit($editorOptions);
+	$smcFunc['ufunc']('create_control_richedit',$editorOptions);
 
 	// Store the ID.
 	$context['post_box_name'] = $editorOptions['id'];
@@ -1204,7 +1204,7 @@ function Display()
 	$context['make_poll'] = isset($_REQUEST['poll']);
 
 	// Message icons - customized icons are off?
-	$context['icons'] = getMessageIcons($board);
+	$context['icons'] = $smcFunc['ufunc']('getMessageIcons',$board);
 
 	if (!empty($context['icons']))
 		$context['icons'][count($context['icons']) - 1]['is_last'] = true;
@@ -1270,24 +1270,24 @@ function Display()
 
 	// Load the drafts js file
 	if ($context['drafts_autosave'])
-		loadJavascriptFile('drafts.js', array('defer' => false), 'smf_drafts');
+		$smcFunc['ufunc']('loadJavascriptFile',array('drafts.js', array('defer' => false), 'smf_drafts'),true);
 
 	// Spellcheck
 	if ($context['show_spellchecking'])
-		loadJavascriptFile('spellcheck.js', array('defer' => false), 'smf_spellcheck');
+		$smcFunc['ufunc']('loadJavascriptFile',array('spellcheck.js', array('defer' => false), 'smf_spellcheck'),true);
 
 	// topic.js
-	loadJavascriptFile('topic.js', array('defer' => false), 'smf_topic');
+	$smcFunc['ufunc']('loadJavascriptFile',array('topic.js', array('defer' => false), 'smf_topic'),true);
 
 	// quotedText.js
-	loadJavascriptFile('quotedText.js', array('defer' => true), 'smf_quotedText');
+	$smcFunc['ufunc']('loadJavascriptFile',array('quotedText.js', array('defer' => true), 'smf_quotedText'),true);
 
 	// Mentions
-	if (!empty($modSettings['enable_mentions']) && allowedTo('mention'))
+	if (!empty($modSettings['enable_mentions']) && $smcFunc['ufunc']('allowedTo','mention'))
 	{
-		loadJavascriptFile('jquery.atwho.min.js', array('defer' => true), 'smf_atwho');
-		loadJavascriptFile('jquery.caret.min.js', array('defer' => true), 'smf_caret');
-		loadJavascriptFile('mentions.js', array('defer' => true), 'smf_mentions');
+		$smcFunc['ufunc']('loadJavascriptFile',array('jquery.atwho.min.js', array('defer' => true), 'smf_atwho'),true);
+		$smcFunc['ufunc']('loadJavascriptFile',array('jquery.caret.min.js', array('defer' => true), 'smf_caret'),true);
+		$smcFunc['ufunc']('loadJavascriptFile',array('mentions.js', array('defer' => true), 'smf_mentions'),true);
 	}
 }
 
@@ -1349,7 +1349,7 @@ function prepareDisplayContext($reset = false)
 	$message['subject'] = $message['subject'] != '' ? $message['subject'] : $txt['no_subject'];
 
 	// Are you allowed to remove at least a single reply?
-	$context['can_remove_post'] |= allowedTo('delete_own') && (empty($modSettings['edit_disable_time']) || $message['poster_time'] + $modSettings['edit_disable_time'] * 60 >= time()) && $message['id_member'] == $user_info['id'];
+	$context['can_remove_post'] |= $smcFunc['ufunc']('allowedTo','delete_own') && (empty($modSettings['edit_disable_time']) || $message['poster_time'] + $modSettings['edit_disable_time'] * 60 >= time()) && $message['id_member'] == $user_info['id'];
 
 	// If the topic is locked, you might not be able to delete the post...
 	if ($context['is_locked'])
@@ -1366,15 +1366,15 @@ function prepareDisplayContext($reset = false)
 		$memberContext[$message['id_member']]['group'] = $txt['guest_title'];
 		$memberContext[$message['id_member']]['link'] = $message['poster_name'];
 		$memberContext[$message['id_member']]['email'] = $message['poster_email'];
-		$memberContext[$message['id_member']]['show_email'] = allowedTo('moderate_forum');
+		$memberContext[$message['id_member']]['show_email'] = $smcFunc['ufunc']('allowedTo','moderate_forum');
 		$memberContext[$message['id_member']]['is_guest'] = true;
 	}
 	else
 	{
 		// Define this here to make things a bit more readable
-		$can_view_warning = $context['user']['can_mod'] || allowedTo('view_warning_any') || ($message['id_member'] == $user_info['id'] && allowedTo('view_warning_own'));
+		$can_view_warning = $context['user']['can_mod'] || $smcFunc['ufunc']('allowedTo','view_warning_any') || ($message['id_member'] == $user_info['id'] && $smcFunc['ufunc']('allowedTo','view_warning_own'));
 
-		$memberContext[$message['id_member']]['can_view_profile'] = allowedTo('profile_view') || ($message['id_member'] == $user_info['id'] && !$user_info['is_guest']);
+		$memberContext[$message['id_member']]['can_view_profile'] = $smcFunc['ufunc']('allowedTo','profile_view') || ($message['id_member'] == $user_info['id'] && !$user_info['is_guest']);
 		$memberContext[$message['id_member']]['is_topic_starter'] = $message['id_member'] == $context['topic_starter_id'];
 		$memberContext[$message['id_member']]['can_see_warning'] = !isset($context['disabled_fields']['warning_status']) && $memberContext[$message['id_member']]['warning_status'] && $can_view_warning;
 		// Show the email if it's your post...
@@ -1385,11 +1385,11 @@ function prepareDisplayContext($reset = false)
 	$memberContext[$message['id_member']]['show_profile_buttons'] = !empty($modSettings['show_profile_buttons']) && (!empty($memberContext[$message['id_member']]['can_view_profile']) || (!empty($memberContext[$message['id_member']]['website']['url']) && !isset($context['disabled_fields']['website'])) || $memberContext[$message['id_member']]['show_email'] || $context['can_send_pm']);
 
 	// Do the censor thang.
-	censorText($message['body']);
-	censorText($message['subject']);
+	$smcFunc['ufunc']('censorText',$message['body']);
+	$smcFunc['ufunc']('censorText',$message['subject']);
 
 	// Run BBC interpreter on the message.
-	$message['body'] = parse_bbc($message['body'], $message['smileys_enabled'], $message['id_msg']);
+	$message['body'] = $smcFunc['ufunc']('parse_bbc',array($message['body'], $message['smileys_enabled'], $message['id_msg']),true);
 
 	// If it's in the recycle bin we need to override whatever icon we did have.
 	if (!empty($board_info['recycle']))
@@ -1399,7 +1399,7 @@ function prepareDisplayContext($reset = false)
 
 	// Compose the memory eat- I mean message array.
 	$output = array(
-		'attachment' => loadAttachmentContext($message['id_msg'], $context['loaded_attachments']),
+		'attachment' => $smcFunc['ufunc']('loadAttachmentContext',array($message['id_msg'], $context['loaded_attachments']),true),
 		'id' => $message['id_msg'],
 		'href' => $scripturl . '?topic=' . $topic . '.msg' . $message['id_msg'] . '#msg' . $message['id_msg'],
 		'link' => '<a href="' . $scripturl . '?msg=' . $message['id_msg'] . '" rel="nofollow">' . $message['subject'] . '</a>',
@@ -1407,12 +1407,12 @@ function prepareDisplayContext($reset = false)
 		'icon' => $message['icon'],
 		'icon_url' => $settings[$context['icon_sources'][$message['icon']]] . '/post/' . $message['icon'] . '.png',
 		'subject' => $message['subject'],
-		'time' => timeformat($message['poster_time']),
-		'timestamp' => forum_time(true, $message['poster_time']),
+		'time' => $smcFunc['ufunc']('timeformat',$message['poster_time']),
+		'timestamp' => $smcFunc['ufunc']('forum_time',array(true, $message['poster_time']),true),
 		'counter' => $counter,
 		'modified' => array(
-			'time' => timeformat($message['modified_time']),
-			'timestamp' => forum_time(true, $message['modified_time']),
+			'time' => $smcFunc['ufunc']('timeformat',$message['modified_time']),
+			'timestamp' => $smcFunc['ufunc']('forum_time',array(true, $message['modified_time']),true),
 			'name' => $message['modified_name'],
 			'reason' => $message['modified_reason']
 		),
@@ -1423,9 +1423,9 @@ function prepareDisplayContext($reset = false)
 		'is_ignored' => !empty($modSettings['enable_buddylist']) && !empty($options['posts_apply_ignore_list']) && in_array($message['id_member'], $context['user']['ignoreusers']),
 		'can_approve' => !$message['approved'] && $context['can_approve'],
 		'can_unapprove' => !empty($modSettings['postmod_active']) && $context['can_approve'] && $message['approved'],
-		'can_modify' => (!$context['is_locked'] || allowedTo('moderate_board')) && (allowedTo('modify_any') || (allowedTo('modify_replies') && $context['user']['started']) || (allowedTo('modify_own') && $message['id_member'] == $user_info['id'] && (empty($modSettings['edit_disable_time']) || !$message['approved'] || $message['poster_time'] + $modSettings['edit_disable_time'] * 60 > time()))),
-		'can_remove' => allowedTo('delete_any') || (allowedTo('delete_replies') && $context['user']['started']) || (allowedTo('delete_own') && $message['id_member'] == $user_info['id'] && (empty($modSettings['edit_disable_time']) || $message['poster_time'] + $modSettings['edit_disable_time'] * 60 > time())),
-		'can_see_ip' => allowedTo('moderate_forum') || ($message['id_member'] == $user_info['id'] && !empty($user_info['id'])),
+		'can_modify' => (!$context['is_locked'] || $smcFunc['ufunc']('allowedTo','moderate_board')) && ($smcFunc['ufunc']('allowedTo','modify_any') || ($smcFunc['ufunc']('allowedTo','modify_replies') && $context['user']['started']) || ($smcFunc['ufunc']('allowedTo','modify_own') && $message['id_member'] == $user_info['id'] && (empty($modSettings['edit_disable_time']) || !$message['approved'] || $message['poster_time'] + $modSettings['edit_disable_time'] * 60 > time()))),
+		'can_remove' => $smcFunc['ufunc']('allowedTo','delete_any') || ($smcFunc['ufunc']('allowedTo','delete_replies') && $context['user']['started']) || ($smcFunc['ufunc']('allowedTo','delete_own') && $message['id_member'] == $user_info['id'] && (empty($modSettings['edit_disable_time']) || $message['poster_time'] + $modSettings['edit_disable_time'] * 60 > time())),
+		'can_see_ip' => $smcFunc['ufunc']('allowedTo','moderate_forum') || ($message['id_member'] == $user_info['id'] && !empty($user_info['id'])),
 		'css_class' => $message['approved'] ? 'windowbg' : 'approvebg',
 	);
 
@@ -1493,7 +1493,7 @@ function Download()
 
 	// Make sure some attachment was requested!
 	if (!isset($_REQUEST['attach']) && !isset($_REQUEST['id']))
-		fatal_lang_error('no_access', false);
+		$smcFunc['ufunc']('fatal_lang_error',array('no_access', false),true);
 
 	$_REQUEST['attach'] = isset($_REQUEST['attach']) ? (int) $_REQUEST['attach'] : (int) $_REQUEST['id'];
 
@@ -1505,7 +1505,7 @@ function Download()
 	else
 	{
 		// This checks only the current board for $board/$topic's permissions.
-		isAllowedTo('view_attachments');
+		$smcFunc['ufunc']('isAllowedTo','view_attachments');
 
 		// Make sure this attachment is on this board.
 		// @todo: We must verify that $topic is the attachment's topic, or else the permission check above is broken.
@@ -1524,14 +1524,14 @@ function Download()
 	}
 
 	if ($smcFunc['db_num_rows']($request) == 0)
-		fatal_lang_error('no_access', false);
+		$smcFunc['ufunc']('fatal_lang_error',array('no_access', false),true);
 
 	list ($id_folder, $real_filename, $file_hash, $file_ext, $id_attach, $attachment_type, $mime_type, $is_approved, $id_member) = $smcFunc['db_fetch_row']($request);
 	$smcFunc['db_free_result']($request);
 
 	// If it isn't yet approved, do they have permission to view it?
 	if (!$is_approved && ($id_member == 0 || $user_info['id'] != $id_member) && ($attachment_type == 0 || $attachment_type == 3))
-		isAllowedTo('approve_posts');
+		$smcFunc['ufunc']('isAllowedTo','approve_posts');
 
 	// Update the download counter (unless it's a thumbnail).
 	if ($attachment_type != 3)
@@ -1544,7 +1544,7 @@ function Download()
 			)
 		);
 
-	$filename = getAttachmentFilename($real_filename, $_REQUEST['attach'], $id_folder, false, $file_hash);
+	$filename = $smcFunc['ufunc']('getAttachmentFilename',array($real_filename, $_REQUEST['attach'], $id_folder, false, $file_hash),true);
 
 	// This is done to clear any output that was made before now.
 	ob_end_clean();
@@ -1594,7 +1594,7 @@ function Download()
 	// Send the attachment headers.
 	header('Pragma: ');
 
-	if (!isBrowser('gecko'))
+	if (!$smcFunc['ufunc']('isBrowser','gecko'))
 		header('Content-Transfer-Encoding: binary');
 
 	header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 525600 * 60) . ' GMT');
@@ -1623,13 +1623,13 @@ function Download()
 	$disposition = !isset($_REQUEST['image']) ? 'attachment' : 'inline';
 
 	// Different browsers like different standards...
-	if (isBrowser('firefox'))
+	if ($smcFunc['ufunc']('isBrowser','firefox'))
 		header('Content-Disposition: ' . $disposition . '; filename*=UTF-8\'\'' . rawurlencode(preg_replace_callback('~&#(\d{3,8});~', 'fixchar__callback', $utf8name)));
 
-	elseif (isBrowser('opera'))
+	elseif ($smcFunc['ufunc']('isBrowser','opera'))
 		header('Content-Disposition: ' . $disposition . '; filename="' . preg_replace_callback('~&#(\d{3,8});~', 'fixchar__callback', $utf8name) . '"');
 
-	elseif (isBrowser('ie'))
+	elseif ($smcFunc['ufunc']('isBrowser','ie'))
 		header('Content-Disposition: ' . $disposition . '; filename="' . urlencode(preg_replace_callback('~&#(\d{3,8});~', 'fixchar__callback', $utf8name)) . '"');
 
 	else
@@ -1713,12 +1713,12 @@ function QuickInTopicModeration()
 	global $sourcedir, $topic, $board, $user_info, $smcFunc, $modSettings, $context;
 
 	// Check the session = get or post.
-	checkSession('request');
+	$smcFunc['ufunc']('checkSession','request');
 
 	require_once($sourcedir . '/RemoveTopic.php');
 
 	if (empty($_REQUEST['msgs']))
-		redirectexit('topic=' . $topic . '.' . $_REQUEST['start']);
+		$smcFunc['ufunc']('redirectexit','topic=' . $topic . '.' . $_REQUEST['start']);
 
 	$messages = array();
 	foreach ($_REQUEST['msgs'] as $dummy)
@@ -1726,7 +1726,7 @@ function QuickInTopicModeration()
 
 	// We are restoring messages. We handle this in another place.
 	if (isset($_REQUEST['restore_selected']))
-		redirectexit('action=restoretopic;msgs=' . implode(',', $messages) . ';' . $context['session_var'] . '=' . $context['session_id']);
+		$smcFunc['ufunc']('redirectexit','action=restoretopic;msgs=' . implode(',', $messages) . ';' . $context['session_var'] . '=' . $context['session_id']);
 	if (isset($_REQUEST['split_selection']))
 	{
 		$request = $smcFunc['db_query']('', '
@@ -1741,14 +1741,14 @@ function QuickInTopicModeration()
 		list($subname) = $smcFunc['db_fetch_row']($request);
 		$smcFunc['db_free_result']($request);
 		$_SESSION['split_selection'][$topic] = $messages;
-		redirectexit('action=splittopics;sa=selectTopics;topic=' . $topic . '.0;subname_enc=' .urlencode($subname) . ';' . $context['session_var'] . '=' . $context['session_id']);
+		$smcFunc['ufunc']('redirectexit','action=splittopics;sa=selectTopics;topic=' . $topic . '.0;subname_enc=' .urlencode($subname) . ';' . $context['session_var'] . '=' . $context['session_id']);
 	}
 
 	// Allowed to delete any message?
-	if (allowedTo('delete_any'))
+	if ($smcFunc['ufunc']('allowedTo','delete_any'))
 		$allowed_all = true;
 	// Allowed to delete replies to their messages?
-	elseif (allowedTo('delete_replies'))
+	elseif ($smcFunc['ufunc']('allowedTo','delete_replies'))
 	{
 		$request = $smcFunc['db_query']('', '
 			SELECT id_member_started
@@ -1769,7 +1769,7 @@ function QuickInTopicModeration()
 
 	// Make sure they're allowed to delete their own messages, if not any.
 	if (!$allowed_all)
-		isAllowedTo('delete_own');
+		$smcFunc['ufunc']('isAllowedTo','delete_own');
 
 	// Allowed to remove which messages?
 	$request = $smcFunc['db_query']('', '
@@ -1819,14 +1819,14 @@ function QuickInTopicModeration()
 		elseif ($message == $first_message)
 			$topicGone = true;
 
-		removeMessage($message);
+		$smcFunc['ufunc']('removeMessage',$message);
 
 		// Log this moderation action ;).
-		if (allowedTo('delete_any') && (!allowedTo('delete_own') || $info[1] != $user_info['id']))
-			logAction('delete', array('topic' => $topic, 'subject' => $info[0], 'member' => $info[1], 'board' => $board));
+		if ($smcFunc['ufunc']('allowedTo','delete_any') && (!$smcFunc['ufunc']('allowedTo','delete_own') || $info[1] != $user_info['id']))
+			$smcFunc['ufunc']('logAction',array('delete', array('topic' => $topic, 'subject' => $info[0], 'member' => $info[1], 'board' => $board)),true);
 	}
 
-	redirectexit(!empty($topicGone) ? 'board=' . $board : 'topic=' . $topic . '.' . $_REQUEST['start']);
+	$smcFunc['ufunc']('redirectexit',!empty($topicGone) ? 'board=' . $board : 'topic=' . $topic . '.' . $_REQUEST['start']);
 }
 
 ?>
