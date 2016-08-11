@@ -331,6 +331,10 @@ function smf_db_query($identifier, $db_string, $db_values = array(), $connection
 	global $db_cache, $db_count, $db_connection, $db_show_debug, $time_start;
 	global $db_unbuffered, $db_callback, $modSettings;
 
+	// Integrate DB query
+	if (isset($db_values['query_key']))
+		call_integration_hook('integrate_db_query_'.$db_values['query_key'], array(&$db_string,&$db_values));
+
 	// Comments that are allowed in a query are preg_removed.
 	static $allowed_comments_from = array(
 		'~\s+~s',
